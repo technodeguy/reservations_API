@@ -1,0 +1,31 @@
+version: '3.7'
+services:
+  booking-api:
+    build: .
+    container_name: booking-api
+    command: npm run start
+    restart: always
+    depends_on:
+      - booking-db
+    networks: 
+      - db-tier
+
+  booking-db:
+    build: ./db
+    hostname: booking-db
+    container_name: booking-db
+    restart: always
+    networks:
+      - db-tier
+
+  booking-phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: booking-phpmyadmin
+    restart: always
+    depends_on:
+      - booking-db
+    networks:
+      - db-tier
+
+networks:
+  db-tier:

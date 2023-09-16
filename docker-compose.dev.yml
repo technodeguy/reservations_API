@@ -1,0 +1,40 @@
+version: '3.7'
+services:
+  booking-api:
+    command: npm run dev
+    env_file: .env
+    environment:
+      DB_HOST: booking-db
+      DB_USER: root
+      DB_USER_PASSWORD: root
+      DB_NAME: booking
+      DB_PORT: 3306
+    ports:
+      - 3000:3000
+    volumes:
+      - ./:/api
+    depends_on:
+      - booking-db
+
+  booking-db:
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASS}
+      MYSQL_DATABASE: ${MYSQL_APP_DB}
+    ports:
+      - 6033:3306
+    # volumes:
+    #   - db-data:/var/lib/mysql
+
+  booking-phpmyadmin:
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASS}
+      PMA_HOST: booking-db
+      PMA_PORT: 3306
+      PMA_ARBITRARY: 1
+    ports:
+      - 8081:80
+    depends_on:
+      - booking-db
+
+volumes:
+  db-data:

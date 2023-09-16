@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS `booking`.`user` (
   `email` VARCHAR(64) NOT NULL,
   `password` CHAR(60) NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE INDEX `ak_email` (`email` ASC) VISIBLE)
+  UNIQUE INDEX `ak_email` (`email` ASC))
 ENGINE = InnoDB;
 
 
@@ -57,8 +57,8 @@ CREATE TABLE IF NOT EXISTS `booking`.`reservation` (
   `amenity_id` INT NOT NULL,
   `user_id` INT NOT NULL,
   PRIMARY KEY (`id`),
-  INDEX `fk_reservation_amenity_idx` (`amenity_id` ASC) VISIBLE,
-  INDEX `fk_reservation_user_idx` (`user_id` ASC) VISIBLE,
+  INDEX `fk_reservation_amenity_idx` (`amenity_id` ASC),
+  INDEX `fk_reservation_user_idx` (`user_id` ASC),
   CONSTRAINT `fk_reservation_amenity`
     FOREIGN KEY (`amenity_id`)
     REFERENCES `booking`.`amenity` (`id`)
