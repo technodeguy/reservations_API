@@ -1,6 +1,9 @@
+const fs = require('fs');
 const crypto = require('crypto');
 const express = require('express');
 const bodyParser = require('body-parser')
+const multer = require('multer');
+const csv = require('csv-parse');
 
 const { db } = require('./db');
 const { groupItemsByKey } = require('./utils');
@@ -10,10 +13,17 @@ const port = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
 
+const uploadMiddleware = multer({ dest: './upload' }).single('importFile')
+
 app.get('/', (req, res) => {
   res.send('OK');
 });
 
+const ConfigCSV = {
+  delimiter:';',
+  from_line: 2,
+  trim: true,
+};
 
 /* 
 * Sign in user
@@ -151,6 +161,38 @@ app.get('/user/reservations/:user_id', async (req, res) => {
     return res.status(500).send({ message: 'Internal server error' });
   }
 });
+
+function parseCSVPromise(filePath) {
+  return new Promise((resolve, reject) => {
+    const records = [];
+    fs.createReadStream(filePath)
+      .pipe(csv.parse(ConfigCSV))
+      .on('data', row => {
+        const [id, amenity_id, user_id, start_time, end_time, date] = row;
+        records.push({id, amenity_id, user_id, start_time, end_time, date});
+      })
+      .on('error', error => {
+        reject(error);
+        throw new Error('Fail to process CSV file');
+      })
+      .on('end', () => {
+        resolve(records);
+      });
+  });
+}
+
+app.post('/import', uploadMiddleware, async (req, res) => {
+  const filePath = req.file.path;    
+  try {
+    
+    const records = await parseCSVPromise(filePath);
+
+    return res.status(200).send({ results: records });
+  } catch (err) {
+    console.log('Error', err);
+    return res.status(500).send({ message: 'Internal server error' });
+  }
+})
 
 app.listen(port, () => {
   console.log(`reservations app listening on port ${port}`);
