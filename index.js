@@ -13,6 +13,10 @@ app.get('/', (req, res) => {
   res.send('OK');
 });
 
+
+/* 
+* Sign in user
+*/
 app.post('/user/login', async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -37,6 +41,10 @@ app.post('/user/login', async (req, res) => {
   }
 });
 
+
+/* 
+* Sign up user
+*/
 app.post('/user/register', async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -60,6 +68,44 @@ app.post('/user/register', async (req, res) => {
     return res.status(500).send({ message: 'Internal server error' });
   }
 });
+
+/* 
+* Create reservation
+*/
+app.post('/reservation', async (req, res) => {
+  const { startTime, endTime, date, amenityId, userId } = req.body;
+  try {
+    if (!(startTime && endTime && date && amenityId && userId)) {
+      return res.status(400).send({ message: 'Expected startTime, endTime, date, amenityId, userId' });
+    }
+
+    const userRaw = await db.query(`SELECT id FROM user WHERE id = ${userId} LIMIT 1`);
+
+    if (!userRaw.length || !userRaw[0].id) {
+      return res.status(404).send({ message: 'User with such id not found' });
+    }
+
+    const amenityRaw = await db.query(`SELECT id FROM amenity WHERE id = ${amenityId} LIMIT 1`);
+
+    if (!amenityRaw.length || !amenityRaw[0].id) {
+      return res.status(404).send({ message: 'Amenity with such id not found' });
+    }
+
+    const reservationId = await db.insertWithGetId(`INSERT INTO reservation (start_time, end_time, date, amenity_id, user_id) VALUES (${startTime}, ${endTime}, ${date}, ${amenityId}, ${userId})`);
+
+    return res.status(201).send({ message: 'OK', id: reservationId });
+  } catch (err) {
+    console.log('Error', err);
+    return res.status(500).send({ message: 'Internal server error' });
+  }
+});
+/* 
+* Get amenity reservations by amenity id
+*/
+
+/* 
+* Get user reservations by user id
+*/
 
 app.listen(port, () => {
   console.log(`reservations app listening on port ${port}`);
