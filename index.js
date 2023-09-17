@@ -7,6 +7,7 @@ const csv = require('csv-parse');
 
 const { db } = require('./db');
 const { groupItemsByKey } = require('./utils');
+const TokenService = require('./tokenService');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -45,7 +46,9 @@ app.post('/user/login', async (req, res) => {
       return res.status(400).send({ message: 'Invalid password' });
     }
 
-    return res.status(200).send({ message: userRaw[0] })
+    const token = new TokenService().generate({ id: userRaw[0].id });
+
+    return res.status(200).send({ message: userRaw[0], token });
   } catch (err) {
     console.log('Error', err)
     return res.status(500).send({ message: 'Internal server error' })
@@ -67,7 +70,6 @@ app.post('/user/register', async (req, res) => {
 
     return res.status(201).send({ message: 'OK' });
   } catch (err) {
-    await db.rollback()
     if (err.code === 'ER_DUP_ENTRY') {
       if (err.sqlMessage) {
         if (err.sqlMessage.endsWith('ak_email\'')) {
@@ -141,6 +143,7 @@ app.get('/amenity/reservations/:amenity_id', async (req, res) => {
     return res.status(500).send({ message: 'Internal server error' });
   }
 });
+
 /* 
 * Get user reservations by user id
 */
@@ -181,7 +184,25 @@ function parseCSVPromise(filePath) {
   });
 }
 
-app.post('/import', uploadMiddleware, async (req, res) => {
+function buildAuthMiddleware() {
+  return function(req, res, next) {
+    try {
+      const token = req.headers['authorization'];
+      if (!token) {
+        throw new Error();
+      }
+      new TokenService().verify(token);
+    } catch (err) {
+      return res.status(401).send({ error: 'Unauthorized' });
+    }
+    next();
+  }
+}
+
+/* 
+* Import and parse csv file
+*/
+app.post('/import', [buildAuthMiddleware(), uploadMiddleware], async (req, res) => {
   const filePath = req.file.path;    
   try {
     
