@@ -100,10 +100,37 @@ app.post('/reservation', async (req, res) => {
     return res.status(500).send({ message: 'Internal server error' });
   }
 });
+
 /* 
 * Get amenity reservations by amenity id
 */
+app.get('/amenity/reservations/:amenity_id', async (req, res) => {
+  const { amenity_id: amenityId } = req.params;
+  try {
+    if (!amenityId) {
+      return res.status(400).send({ message: 'Expected amenityId' });
+    }
 
+    const amenityReservations = await db.query(
+      `
+      SELECT 
+        reservation.id AS reservationId,
+        reservation.user_id AS userId,
+        reservation.start_time AS startTime,
+        (reservation.end_time - reservation.start_time) AS duration,
+        amenity.name AS amenityName
+      FROM reservation
+      INNER JOIN amenity ON 1=1 AND
+        reservation.amenity_id = amenity.id
+      WHERE amenity_id = ${amenityId}`
+    );
+    
+    return res.status(200).send({ amenityReservations });
+  } catch (err) {
+    console.log('Error', err);
+    return res.status(500).send({ message: 'Internal server error' });
+  }
+});
 /* 
 * Get user reservations by user id
 */
