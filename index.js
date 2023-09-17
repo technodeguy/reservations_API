@@ -3,6 +3,7 @@ const express = require('express');
 const bodyParser = require('body-parser')
 
 const { db } = require('./db');
+const { groupItemsByKey } = require('./utils');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -106,7 +107,25 @@ app.post('/reservation', async (req, res) => {
 /* 
 * Get user reservations by user id
 */
+app.get('/user/reservations/:user_id', async (req, res) => {
+  const { user_id: userId } = req.params;
+  try {
+    if (!userId) {
+      return res.status(400).send({ message: 'Expected userId' });
+    }
+
+    const userReservations = await db.query(`SELECT * FROM reservation WHERE user_id = ${userId}`);
+
+    const groupedReservationsByDate = groupItemsByKey(userReservations, 'date');
+    
+    return res.status(200).send({ userReservations: groupedReservationsByDate });
+  } catch (err) {
+    console.log('Error', err);
+    return res.status(500).send({ message: 'Internal server error' });
+  }
+});
 
 app.listen(port, () => {
   console.log(`reservations app listening on port ${port}`);
 });
+
